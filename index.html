@@ -1,0 +1,136 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<title>曲线图</title>
+		<style type="text/css">
+			body,html{
+				width: 100%;
+				height: 100%;
+				background: #000;
+				margin: 0;
+				padding: 0;
+				overflow: hidden;
+			}
+			#myCanvas{
+				width:80%;
+				height:80%;
+				display: block;
+				margin:50px auto 0;
+				border: 2px solid red;
+			}
+			.tips{
+				position: absolute;
+				padding: 10px;
+				background: #ccc;
+				color: #000;
+				margin: 0;
+				transition: all .3s;
+				display: none;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="myCanvas">
+		</div>
+		<p class="tips"></p>
+		<script src="js/jquery-1.11.3.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="js/easeljs-0.8.2.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="js/TweenMax.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="js/curve.js" type="text/javascript" charset="utf-8"></script>
+		<script type="text/javascript">
+		var result = null;
+			$.ajax({
+				type:"get",
+				url:"data/ceshi.txt",
+				dataType:"json",
+				success:function(data){
+					result = data.result;
+					var topName = "ip";
+					var bottomName = "ym";
+					var nodeArr = [],nodeMap = [],resultMap = {},bottomNode = [],bottomMap = [];
+			    	for (var i = 0; i < result.length; i++) {
+			    		if(!resultMap[result[i][topName]]){
+			    			resultMap[result[i][topName]] = {
+			    				name:result[i][topName],
+			    				to:[]
+			    			}
+			    		}
+		    			if($.inArray(result[i][bottomName],resultMap[result[i][topName]].to)==-1){
+		    				resultMap[result[i][topName]].to.push(result[i]);
+		    			}
+			    		if($.inArray(result[i][bottomName],bottomNode)==-1){
+		    				bottomMap.push(result[i]);
+		    				bottomNode.push(result[i][bottomName]);
+		    			}
+		    			if($.inArray(result[i][topName],nodeArr)==-1){
+		    				nodeMap.push(result[i]);
+		    				nodeArr.push(result[i][topName]);
+		    			}
+					}
+					init({
+						topNodeArr:bottomMap,
+						bottomNodeArr:nodeMap,
+						to:resultMap
+					});
+			}
+			});
+			function init(data){
+				var curve = new Widget.curve("#myCanvas");
+				curve.setConfig({
+					colorArr:["#f90","#6afbf8","blue","yellow","red","#d7953d"],//线条颜色
+					topName:"ym",//上边点字段
+					bottomName:"ip",//下边点字段
+					info:"cs",//提示信息字段
+					fontColor:"#64c5ff",//字体颜色
+					fontStyle:"12px Arial",//字体样式
+					fontdeg:-30,//字体旋转角度
+					Highlightsize:4,//高亮元素间隔
+					radius:4,//小圆点半径
+					Highlightradius:5,//高亮小圆点半径
+					top:70,//上边距
+					bottom:70,//下边距
+					topline:0.1,//上直线取值范围（两个圆点之间距离的百分比）
+					bottomline:0.1,//下直线取值范围
+					circleColor:"#4f98ac",//小圆点填充色
+					topHighlightcircleColor:"#ddd63d",//上边高亮小圆点填充色
+					bottomHighlightcircleColor:"#ff6a00",//下边高亮小圆点填充色
+					numberOfPoints:100,//线条分成多少段
+					streSize:1	//流光取多少点
+				});
+				start();
+				curve.EventDispatcher.on("WIDGET_OVER",function(e,argObj){
+					var left = $("#myCanvas").offset().left + argObj.x;
+					var top = $("#myCanvas").offset().top + argObj.y;
+					$(".tips").show().html("域名："+argObj.tips.ym+"<br />IP："+argObj.tips.ip+"<br />数量；"+argObj.tips.cs).css({
+						left:left+"px",
+						top:top+"px"
+					});
+				});
+				curve.EventDispatcher.on("WIDGET_OUT",function(e){
+					$(".tips").hide();
+				});
+				window.onresize = throttle(start,100);
+				function throttle(fn, delay){
+				 	var timer = null;
+				 	return function(){
+				 		var context = this, args = arguments;
+				 		clearTimeout(timer);
+				 		timer = setTimeout(function(){
+				 			fn.apply(context, args);
+				 		}, delay);
+				 	};
+				 };
+				function start(){
+					curve.resize({
+						width:$("#myCanvas").width(),
+						height:$("#myCanvas").height()
+					});
+					curve.setDataProvider(data);
+				}
+			}
+		</script>
+	</body>
+</html>
